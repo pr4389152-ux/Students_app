@@ -3,10 +3,18 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-<title>Learning App</title>
+<title>{{ site_name }}</title>
 </head>
 <body>
-<div class="container">
+<div class="sidebar" style="float:left; width:200px; background:#eee; padding:10px; height:100vh;">
+  <h3>{{ site_name }}</h3>
+  <p>By Pooja</p>
+  {% if session.get('admin') %}
+    <a href="/admin">Admin Panel</a><br>
+    <a href="/logout">Logout</a>
+  {% endif %}
+</div>
+<div class="container" style="margin-left:220px;">
 {% block content %}{% endblock %}
 </div>
 </body>
