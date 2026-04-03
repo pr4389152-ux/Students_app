@@ -10,23 +10,29 @@ DB_PATH = os.path.join(BASE_DIR, "database.db")
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "static/uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# ----------------- Database Init -----------------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    # Users table
     c.execute("""CREATE TABLE IF NOT EXISTS users(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT UNIQUE,
                     password TEXT)""")
+    # Videos table
     c.execute("""CREATE TABLE IF NOT EXISTS videos(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     title TEXT,
                     filename TEXT)""")
+    # PDFs table
     c.execute("""CREATE TABLE IF NOT EXISTS pdfs(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     filename TEXT)""")
+    # Notes table
     c.execute("""CREATE TABLE IF NOT EXISTS notes(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     content TEXT)""")
+    # MCQs table
     c.execute("""CREATE TABLE IF NOT EXISTS quiz(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     question TEXT,
@@ -40,6 +46,7 @@ def init_db():
 
 init_db()
 
+# ----------------- User Login/Register -----------------
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method=="POST":
@@ -73,6 +80,7 @@ def register():
             return "User already exists"
     return render_template("register.html")
 
+# ----------------- Dashboard -----------------
 @app.route("/dashboard")
 def dashboard():
     if "user" not in session:
@@ -86,8 +94,25 @@ def dashboard():
     conn.close()
     return render_template("dashboard.html", videos=videos, notes=notes, pdfs=pdfs, quiz=quiz)
 
+# ----------------- Admin Login -----------------
+@app.route("/admin_login", methods=["GET","POST"])
+def admin_login():
+    if request.method=="POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        # Hardcoded admin credentials
+        if username=="admin" and password=="admin123":
+            session["admin"] = username
+            return redirect("/admin")
+        else:
+            return "Invalid Admin Credentials"
+    return render_template("admin_login.html")
+
+# ----------------- Admin Panel -----------------
 @app.route("/admin", methods=["GET","POST"])
 def admin():
+    if "admin" not in session:
+        return redirect("/admin_login")
     if request.method=="POST":
         file = request.files.get("file")
         title = request.form.get("title","")
@@ -104,8 +129,11 @@ def admin():
             conn.close()
     return render_template("admin.html")
 
+# ----------------- Add Note -----------------
 @app.route("/add_note", methods=["POST"])
 def add_note():
+    if "admin" not in session:
+        return redirect("/admin_login")
     content = request.form["content"]
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -114,8 +142,11 @@ def add_note():
     conn.close()
     return redirect("/admin")
 
+# ----------------- Add MCQ -----------------
 @app.route("/add_quiz", methods=["POST"])
 def add_quiz():
+    if "admin" not in session:
+        return redirect("/admin_login")
     data = request.form
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -125,10 +156,12 @@ def add_quiz():
     conn.close()
     return redirect("/admin")
 
+# ----------------- Logout -----------------
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
+# ----------------- Run App -----------------
 if __name__=="__main__":
     app.run(host="0.0.0.0", port=10000)
