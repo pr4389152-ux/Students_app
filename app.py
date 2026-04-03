@@ -6,8 +6,8 @@ app.secret_key = "secret123"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
-
-os.makedirs("static/uploads", exist_ok=True)
+if not os.path.exists("static/uploads"):
+    os.makedirs("static/uploads", exist_ok=True)
 
 # ---------------- DATABASE ----------------
 def init_db():
