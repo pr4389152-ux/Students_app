@@ -1,0 +1,9 @@
+<h2>Score: {{score}} / {{total}}</h2>
+
+<h3>Wrong Answers</h3>
+{% for w in wrong %}
+<p>{{w.q}}</p>
+<p>Your Answer: {{w.your}}</p>
+<p>Correct Answer: {{w.correct}}</p>
+<hr>
+{% endfor %}
