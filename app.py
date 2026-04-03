@@ -53,7 +53,12 @@ def admin_login():
             return "Invalid Admin Credentials"
     return render_template("admin_login.html")
 
-# ----------------- Admin Panel -----------------
+# -----# ----------------- Logout -----------------
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/admin_login")
+#----------- Admin Panel -----------------
 @app.route("/admin", methods=["GET","POST"])
 def admin():
     if "admin" not in session:
@@ -77,12 +82,6 @@ def admin():
             conn.commit()
             conn.close()
     return render_template("admin.html", trades=trades)
-
-# ----------------- Logout -----------------
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/admin_login")
 
 if __name__=="__main__":
     app.run(host="0.0.0.0", port=10000)
