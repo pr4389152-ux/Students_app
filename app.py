@@ -9,23 +9,23 @@ DB_PATH = os.path.join(BASE_DIR, "database.db")
 
 os.makedirs("static/uploads", exist_ok=True)
 
-# ---------- DATABASE ----------
+# ---------------- DATABASE ----------------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS pdfs (id INTEGER PRIMARY KEY, filename TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS quiz (id INTEGER PRIMARY KEY, question TEXT, o1 TEXT, o2 TEXT, o3 TEXT, o4 TEXT, ans TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, trade TEXT, title TEXT, filename TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, trade TEXT, content TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS pdfs (id INTEGER PRIMARY KEY, trade TEXT, filename TEXT)")
+    c.execute("CREATE TABLE IF NOT EXISTS quiz (id INTEGER PRIMARY KEY, trade TEXT, question TEXT, o1 TEXT, o2 TEXT, o3 TEXT, o4 TEXT, ans TEXT)")
 
     conn.commit()
     conn.close()
 
 init_db()
 
-# ---------- LOGIN ----------
+# ---------------- LOGIN ----------------
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -38,11 +38,11 @@ def login():
 
         if user:
             session["user"] = user[1]
-            return redirect("/dashboard")
+            return redirect("/select_trade")
     
     return render_template("login.html")
 
-# ---------- REGISTER ----------
+# ---------------- REGISTER ----------------
 @app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "POST":
@@ -56,30 +56,37 @@ def register():
     
     return render_template("register.html")
 
-# ---------- DASHBOARD ----------
-@app.route("/dashboard")
-def dashboard():
+# ---------------- TRADE SELECTION ----------------
+@app.route("/select_trade")
+def select_trade():
+    if "user" not in session:
+        return redirect("/")
+    return render_template("select_trade.html")
+
+# ---------------- DASHBOARD (TRADE-WISE) ----------------
+@app.route("/dashboard/<trade>")
+def dashboard(trade):
     if "user" not in session:
         return redirect("/")
 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    videos = c.execute("SELECT * FROM videos").fetchall()
-    notes = c.execute("SELECT * FROM notes").fetchall()
-    pdfs = c.execute("SELECT * FROM pdfs").fetchall()
-    quiz = c.execute("SELECT * FROM quiz").fetchall()
+    videos = c.execute("SELECT * FROM videos WHERE trade=?", (trade,)).fetchall()
+    notes = c.execute("SELECT * FROM notes WHERE trade=?", (trade,)).fetchall()
+    pdfs = c.execute("SELECT * FROM pdfs WHERE trade=?", (trade,)).fetchall()
+    quiz = c.execute("SELECT * FROM quiz WHERE trade=?", (trade,)).fetchall()
 
     conn.close()
 
-    return render_template("dashboard.html", videos=videos, notes=notes, pdfs=pdfs, quiz=quiz)
+    return render_template("dashboard.html", trade=trade, videos=videos, notes=notes, pdfs=pdfs, quiz=quiz)
 
-# ---------- QUIZ ----------
-@app.route("/submit_quiz", methods=["POST"])
-def submit_quiz():
+# ---------------- QUIZ SUBMIT ----------------
+@app.route("/submit_quiz/<trade>", methods=["POST"])
+def submit_quiz(trade):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    questions = c.execute("SELECT * FROM quiz").fetchall()
+    questions = c.execute("SELECT * FROM quiz WHERE trade=?", (trade,)).fetchall()
     conn.close()
 
     score = 0
@@ -89,16 +96,16 @@ def submit_quiz():
     for q in questions:
         qid = str(q[0])
         user_ans = request.form.get(qid)
-        correct = q[6]
+        correct = q[8]
 
         if user_ans == correct:
             score += 1
         else:
-            wrong.append({"q": q[1], "your": user_ans, "correct": correct})
+            wrong.append({"q": q[2], "your": user_ans, "correct": correct})
 
     return render_template("result.html", score=score, total=total, wrong=wrong)
 
-# ---------- ADMIN LOGIN ----------
+# ---------------- ADMIN LOGIN ----------------
 @app.route("/admin_login", methods=["GET","POST"])
 def admin_login():
     if request.method == "POST":
@@ -107,7 +114,7 @@ def admin_login():
             return redirect("/admin")
     return render_template("admin_login.html")
 
-# ---------- ADMIN PANEL ----------
+# ---------------- ADMIN PANEL ----------------
 @app.route("/admin", methods=["GET","POST"])
 def admin():
     if "admin" not in session:
@@ -116,6 +123,7 @@ def admin():
     if request.method == "POST":
         file = request.files.get("file")
         title = request.form.get("title")
+        trade = request.form.get("trade")
 
         if file and file.filename != "":
             filepath = os.path.join("static/uploads", file.filename)
@@ -125,45 +133,51 @@ def admin():
             c = conn.cursor()
 
             if "video" in request.form:
-                c.execute("INSERT INTO videos (title, filename) VALUES (?,?)", (title, file.filename))
+                c.execute("INSERT INTO videos (trade,title,filename) VALUES (?,?,?)", (trade, title, file.filename))
             elif "pdf" in request.form:
-                c.execute("INSERT INTO pdfs (filename) VALUES (?)", (file.filename,))
+                c.execute("INSERT INTO pdfs (trade,filename) VALUES (?,?)", (trade, file.filename))
 
             conn.commit()
             conn.close()
 
     return render_template("admin.html")
 
-# ---------- ADD NOTE ----------
+# ---------------- ADD NOTE ----------------
 @app.route("/add_note", methods=["POST"])
 def add_note():
+    trade = request.form["trade"]
+    content = request.form["content"]
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO notes (content) VALUES (?)", (request.form["content"],))
+    c.execute("INSERT INTO notes (trade,content) VALUES (?,?)", (trade, content))
     conn.commit()
     conn.close()
+
     return redirect("/admin")
 
-# ---------- ADD QUIZ ----------
+# ---------------- ADD QUIZ ----------------
 @app.route("/add_quiz", methods=["POST"])
 def add_quiz():
     d = request.form
+    trade = d["trade"]
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    c.execute("INSERT INTO quiz (question,o1,o2,o3,o4,ans) VALUES (?,?,?,?,?,?)",
-              (d["q"], d["o1"], d["o2"], d["o3"], d["o4"], d["ans"]))
+    c.execute("INSERT INTO quiz (trade,question,o1,o2,o3,o4,ans) VALUES (?,?,?,?,?,?,?)",
+              (trade, d["q"], d["o1"], d["o2"], d["o3"], d["o4"], d["ans"]))
 
     conn.commit()
     conn.close()
     return redirect("/admin")
 
-# ---------- LOGOUT ----------
+# ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
-# ---------- RUN ----------
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
