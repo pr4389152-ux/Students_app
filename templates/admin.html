@@ -1,0 +1,55 @@
+<h2>Admin Panel</h2>
+
+<h3>Add Video</h3>
+<form method="post" enctype="multipart/form-data">
+<select name="trade">
+<option>IIOT</option>
+<option>Plumber</option>
+<option>CNC</option>
+<option>IR@DMT</option>
+</select>
+<input name="title" placeholder="Title"><br>
+<input type="file" name="file"><br>
+<button name="video">Upload Video</button>
+</form>
+
+<h3>Add PDF</h3>
+<form method="post" enctype="multipart/form-data">
+<select name="trade">
+<option>IIOT</option>
+<option>Plumber</option>
+<option>CNC</option>
+<option>IR@DMT</option>
+</select>
+<input type="file" name="file"><br>
+<button name="pdf">Upload PDF</button>
+</form>
+
+<h3>Add Note</h3>
+<form method="post" action="/add_note">
+<select name="trade">
+<option>IIOT</option>
+<option>Plumber</option>
+<option>CNC</option>
+<option>IR@DMT</option>
+</select>
+<textarea name="content"></textarea><br>
+<button>Add Note</button>
+</form>
+
+<h3>Add Quiz</h3>
+<form method="post" action="/add_quiz">
+<select name="trade">
+<option>IIOT</option>
+<option>Plumber</option>
+<option>CNC</option>
+<option>IR@DMT</option>
+</select><br>
+<input name="q" placeholder="Question"><br>
+<input name="o1" placeholder="Option 1"><br>
+<input name="o2" placeholder="Option 2"><br>
+<input name="o3" placeholder="Option 3"><br>
+<input name="o4" placeholder="Option 4"><br>
+<input name="ans" placeholder="Correct Answer"><br>
+<button>Add Quiz</button>
+</form>
