@@ -64,7 +64,7 @@ def admin():
         title = request.form.get("title","")
         trade = request.form.get("trade","General")
         if file and file.filename!="":
-            filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+            filepath = os.path.join(BASE_DIR,"static/uploads")
             file.save(filepath)
             conn = sqlite3.connect(DB_PATH)
             c = conn.cursor()
